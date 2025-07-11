@@ -10,7 +10,9 @@ import {
   Timer, 
   User,
   History,
-  Edit
+  Edit,
+  Target,
+  TrendingUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentUser, logout } from '../utils/auth';
@@ -56,6 +58,30 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
     groups[date].push(entry);
     return groups;
   }, {});
+
+  // Get current week (Monday to Friday)
+  const getCurrentWeek = () => {
+    const today = new Date();
+    const monday = new Date(today);
+    const day = today.getDay();
+    const diff = day === 0 ? -6 : 1 - day; // Handle Sunday (0) and get Monday
+    monday.setDate(today.getDate() + diff);
+    
+    const weekDays = [];
+    for (let i = 0; i < 5; i++) { // Monday to Friday
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + i);
+      weekDays.push(day.toISOString().split('T')[0]);
+    }
+    return weekDays;
+  };
+
+  const currentWeekDays = getCurrentWeek();
+  const currentWeekEntries = timeEntries.filter(entry => 
+    currentWeekDays.includes(entry.date)
+  );
+  const currentWeekHours = calculateTotalHours(currentWeekEntries);
+  const weekProgress = (currentWeekHours / 40) * 100;
 
   const totalHours = calculateTotalHours(timeEntries);
 
@@ -111,95 +137,121 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
               </CardContent>
             </Card>
 
-            {/* Statistiken */}
+            {/* Wochenziel Statistiken */}
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Timer className="h-5 w-5" />
-                  Statistiken
+                  <Target className="h-5 w-5" />
+                  Wochenziel (40h)
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Gesamtstunden:</span>
-                    <span className="font-semibold text-lg">{totalHours.toFixed(2)}h</span>
+                    <span className="text-gray-600">Diese Woche:</span>
+                    <span className="font-semibold text-lg">{currentWeekHours.toFixed(2)}h / 40h</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Einträge gesamt:</span>
-                    <span className="font-semibold">{timeEntries.length}</span>
+                  
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-300 ${
+                        weekProgress >= 100 
+                          ? 'bg-green-500' 
+                          : weekProgress >= 75 
+                          ? 'bg-yellow-500' 
+                          : 'bg-blue-500'
+                      }`}
+                      style={{ width: `${Math.min(weekProgress, 100)}%` }}
+                    ></div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Arbeitstage:</span>
-                    <span className="font-semibold">{Object.keys(groupedEntries).length}</span>
+                  
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">{weekProgress.toFixed(1)}% erreicht</span>
+                    <span className={`font-medium ${
+                      weekProgress >= 100 ? 'text-green-600' : 'text-gray-600'
+                    }`}>
+                      {weekProgress >= 100 ? 'Ziel erreicht!' : `${(40 - currentWeekHours).toFixed(2)}h verbleibend`}
+                    </span>
+                  </div>
+                  
+                  <div className="pt-2 border-t">
+                    <div className="flex justify-between items-center text-sm text-gray-600">
+                      <span>Gesamtstunden:</span>
+                      <span>{totalHours.toFixed(2)}h</span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Zeiteinträge Liste */}
+          {/* Zeiteinträge Liste - nur aktuelle Woche */}
           <div className="lg:col-span-2">
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <History className="h-5 w-5" />
-                  Arbeitszeiten Übersicht
+                  <TrendingUp className="h-5 w-5" />
+                  Diese Woche (Mo-Fr)
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {Object.keys(groupedEntries).length === 0 ? (
+                {currentWeekEntries.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>Noch keine Zeiteinträge vorhanden.</p>
+                    <p>Noch keine Zeiteinträge diese Woche.</p>
                     <p className="text-sm">Starten Sie den Timer oder tragen Sie Zeit nach!</p>
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {Object.entries(groupedEntries)
-                      .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
-                      .map(([date, entries]: [string, any[]]) => {
-                        const dayHours = calculateTotalHours(entries);
-                        return (
-                          <div key={date} className="border rounded-lg p-4 bg-gray-50">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-gray-500" />
-                                <h3 className="font-semibold text-gray-900">
-                                  {new Date(date).toLocaleDateString('de-DE', {
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                  })}
-                                </h3>
-                              </div>
-                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-                                {dayHours.toFixed(2)}h
-                              </span>
+                    {currentWeekDays.map(date => {
+                      const dayEntries = currentWeekEntries.filter(entry => entry.date === date);
+                      if (dayEntries.length === 0) return null;
+                      
+                      const dayHours = calculateTotalHours(dayEntries);
+                      return (
+                        <div key={date} className="border rounded-lg p-4 bg-gray-50">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-gray-500" />
+                              <h3 className="font-semibold text-gray-900">
+                                {new Date(date).toLocaleDateString('de-DE', {
+                                  weekday: 'long',
+                                  day: 'numeric',
+                                  month: 'long'
+                                })}
+                              </h3>
                             </div>
-                            
-                            <div className="space-y-2">
-                              {entries.map((entry, index) => (
-                                <div key={index} className="bg-white rounded-lg p-3 border">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex items-center gap-1 text-sm text-gray-600">
-                                        <Clock className="h-3 w-3" />
-                                        {entry.startTime} - {entry.endTime}
-                                      </div>
-                                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                                        {formatTime(entry.startTime, entry.endTime)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <p className="text-gray-700 text-sm">{entry.description}</p>
-                                </div>
-                              ))}
-                            </div>
+                            <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                              dayHours >= 8 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {dayHours.toFixed(2)}h
+                            </span>
                           </div>
-                        );
-                      })}
+                          
+                          <div className="space-y-2">
+                            {dayEntries.map((entry, index) => (
+                              <div key={index} className="bg-white rounded-lg p-3 border">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                                      <Clock className="h-3 w-3" />
+                                      {entry.startTime} - {entry.endTime}
+                                    </div>
+                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                      {formatTime(entry.startTime, entry.endTime)}
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className="text-gray-700 text-sm">{entry.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
