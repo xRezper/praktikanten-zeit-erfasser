@@ -24,6 +24,7 @@ const LiveTimer: React.FC<LiveTimerProps> = ({ onTimeAdded }) => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [description, setDescription] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showDescriptionInput, setShowDescriptionInput] = useState(false);
 
   useEffect(() => {
     const user = getCurrentUser();
@@ -60,6 +61,7 @@ const LiveTimer: React.FC<LiveTimerProps> = ({ onTimeAdded }) => {
     setStartTime(now);
     setIsRunning(true);
     setElapsedTime(0);
+    setShowDescriptionInput(false);
     toast.success('Timer gestartet!');
   };
 
@@ -68,7 +70,15 @@ const LiveTimer: React.FC<LiveTimerProps> = ({ onTimeAdded }) => {
     toast.info('Timer pausiert');
   };
 
-  const handleStop = async () => {
+  const handleStop = () => {
+    if (!startTime) return;
+    
+    setIsRunning(false);
+    setShowDescriptionInput(true);
+    toast.info('Timer gestoppt - Bitte Tätigkeit eingeben');
+  };
+
+  const handleSave = async () => {
     if (!startTime || !description.trim()) {
       toast.error('Bitte geben Sie eine Tätigkeit ein');
       return;
@@ -92,6 +102,7 @@ const LiveTimer: React.FC<LiveTimerProps> = ({ onTimeAdded }) => {
       setStartTime(null);
       setElapsedTime(0);
       setDescription('');
+      setShowDescriptionInput(false);
       onTimeAdded();
     } else {
       toast.error('Fehler beim Speichern der Arbeitszeit');
@@ -103,6 +114,7 @@ const LiveTimer: React.FC<LiveTimerProps> = ({ onTimeAdded }) => {
     setStartTime(null);
     setElapsedTime(0);
     setDescription('');
+    setShowDescriptionInput(false);
     toast.info('Timer zurückgesetzt');
   };
 
@@ -125,25 +137,26 @@ const LiveTimer: React.FC<LiveTimerProps> = ({ onTimeAdded }) => {
           </div>
         </div>
 
-        {/* Description Input */}
-        <div className="space-y-2">
-          <Label htmlFor="timer-description">Was machen Sie gerade?</Label>
-          <Textarea
-            id="timer-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Beschreiben Sie Ihre aktuelle Tätigkeit..."
-            rows={3}
-          />
-        </div>
+        {/* Description Input - only show after stopping */}
+        {showDescriptionInput && (
+          <div className="space-y-2">
+            <Label htmlFor="timer-description">Was haben Sie gemacht?</Label>
+            <Textarea
+              id="timer-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Beschreiben Sie Ihre Tätigkeit..."
+              rows={3}
+            />
+          </div>
+        )}
 
         {/* Timer Controls */}
         <div className="flex gap-2">
-          {!isRunning && elapsedTime === 0 && (
+          {!isRunning && elapsedTime === 0 && !showDescriptionInput && (
             <Button 
               onClick={handleStart} 
               className="flex-1 flex items-center gap-2"
-              disabled={!description.trim()}
             >
               <Play className="h-4 w-4" />
               Start
@@ -151,17 +164,26 @@ const LiveTimer: React.FC<LiveTimerProps> = ({ onTimeAdded }) => {
           )}
           
           {isRunning && (
-            <Button 
-              onClick={handlePause} 
-              variant="outline"
-              className="flex-1 flex items-center gap-2"
-            >
-              <Pause className="h-4 w-4" />
-              Pause
-            </Button>
+            <>
+              <Button 
+                onClick={handlePause} 
+                variant="outline"
+                className="flex-1 flex items-center gap-2"
+              >
+                <Pause className="h-4 w-4" />
+                Pause
+              </Button>
+              <Button 
+                onClick={handleStop} 
+                className="flex-1 flex items-center gap-2"
+              >
+                <Square className="h-4 w-4" />
+                Stop
+              </Button>
+            </>
           )}
           
-          {!isRunning && elapsedTime > 0 && (
+          {!isRunning && elapsedTime > 0 && !showDescriptionInput && (
             <>
               <Button 
                 onClick={handleStart} 
@@ -174,15 +196,33 @@ const LiveTimer: React.FC<LiveTimerProps> = ({ onTimeAdded }) => {
               <Button 
                 onClick={handleStop} 
                 className="flex-1 flex items-center gap-2"
-                disabled={!description.trim()}
               >
                 <Square className="h-4 w-4" />
-                Beenden
+                Stop
+              </Button>
+            </>
+          )}
+
+          {showDescriptionInput && (
+            <>
+              <Button 
+                onClick={handleSave} 
+                className="flex-1 flex items-center gap-2"
+                disabled={!description.trim()}
+              >
+                Speichern
+              </Button>
+              <Button 
+                onClick={handleReset} 
+                variant="outline"
+                className="flex-1 flex items-center gap-2"
+              >
+                Abbrechen
               </Button>
             </>
           )}
           
-          {elapsedTime > 0 && (
+          {elapsedTime > 0 && !showDescriptionInput && (
             <Button 
               onClick={handleReset} 
               variant="destructive"
