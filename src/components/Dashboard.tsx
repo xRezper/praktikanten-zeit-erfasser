@@ -2,9 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   Clock, 
   Plus, 
@@ -12,101 +9,37 @@ import {
   Calendar, 
   Timer, 
   User,
-  AlertCircle,
-  CheckCircle,
-  History
+  History,
+  Edit
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { getCurrentUser, logout } from '../utils/auth';
 import { 
   getTimeEntries, 
-  addTimeEntry, 
   calculateTotalHours,
-  formatTime,
-  getSystemStartTime,
-  isValidTimeEntry
+  formatTime
 } from '../utils/timeTracking';
 import { toast } from 'sonner';
+import LiveTimer from './LiveTimer';
 
 interface DashboardProps {
   onLogout: () => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
+  const navigate = useNavigate();
   const [timeEntries, setTimeEntries] = useState<any[]>([]);
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    startTime: '',
-    endTime: '',
-    description: ''
-  });
-  const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [systemStartTime, setSystemStartTime] = useState<string>('');
 
   useEffect(() => {
     const user = getCurrentUser();
     setCurrentUser(user);
     loadTimeEntries();
-    setSystemStartTime(getSystemStartTime());
   }, []);
 
   const loadTimeEntries = () => {
     const entries = getTimeEntries();
     setTimeEntries(entries);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // Validierung der Zeitangaben
-      const validation = isValidTimeEntry(
-        formData.date,
-        formData.startTime,
-        formData.endTime
-      );
-
-      if (!validation.isValid) {
-        toast.error(validation.message);
-        setLoading(false);
-        return;
-      }
-
-      const entry = {
-        date: formData.date,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        description: formData.description,
-        username: currentUser?.username
-      };
-
-      const success = addTimeEntry(entry);
-      
-      if (success) {
-        toast.success('Zeiteintrag erfolgreich hinzugefügt!');
-        loadTimeEntries();
-        setFormData({
-          date: new Date().toISOString().split('T')[0],
-          startTime: '',
-          endTime: '',
-          description: ''
-        });
-      } else {
-        toast.error('Fehler beim Hinzufügen des Zeiteintrags');
-      }
-    } catch (error) {
-      toast.error('Ein Fehler ist aufgetreten');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
   };
 
   const handleLogout = () => {
@@ -159,92 +92,27 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Zeiteintrag hinzufügen */}
-          <div className="lg:col-span-1">
+          {/* Timer und Aktionen */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Live Timer */}
+            <LiveTimer onTimeAdded={loadTimeEntries} />
+
+            {/* Manual Entry Button */}
             <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Neue Arbeitszeit
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Datum</Label>
-                    <Input
-                      id="date"
-                      name="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="startTime">Start</Label>
-                      <Input
-                        id="startTime"
-                        name="startTime"
-                        type="time"
-                        value={formData.startTime}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="endTime">Ende</Label>
-                      <Input
-                        id="endTime"
-                        name="endTime"
-                        type="time"
-                        value={formData.endTime}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Tätigkeit</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleChange}
-                      placeholder="Beschreiben Sie Ihre Arbeit..."
-                      required
-                      rows={3}
-                    />
-                  </div>
-
-                  {systemStartTime && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center gap-2 text-blue-700 text-sm">
-                        <AlertCircle className="h-4 w-4" />
-                        PC-Start heute: {systemStartTime}
-                      </div>
-                      <p className="text-xs text-blue-600 mt-1">
-                        Zeiten vor dem PC-Start können nicht eingetragen werden.
-                      </p>
-                    </div>
-                  )}
-
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    {loading ? 'Speichern...' : 'Zeit hinzufügen'}
-                  </Button>
-                </form>
+              <CardContent className="pt-6">
+                <Button 
+                  onClick={() => navigate('/manual-entry')}
+                  variant="outline"
+                  className="w-full flex items-center gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  Zeit nachtragen
+                </Button>
               </CardContent>
             </Card>
 
             {/* Statistiken */}
-            <Card className="shadow-sm mt-6">
+            <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Timer className="h-5 w-5" />
@@ -284,7 +152,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                   <div className="text-center py-8 text-gray-500">
                     <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                     <p>Noch keine Zeiteinträge vorhanden.</p>
-                    <p className="text-sm">Fügen Sie Ihren ersten Eintrag hinzu!</p>
+                    <p className="text-sm">Starten Sie den Timer oder tragen Sie Zeit nach!</p>
                   </div>
                 ) : (
                   <div className="space-y-6">

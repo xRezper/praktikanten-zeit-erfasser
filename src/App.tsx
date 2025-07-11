@@ -9,6 +9,7 @@ import RegisterPage from "./components/RegisterPage";
 import Dashboard from "./components/Dashboard";
 import NotFound from "./pages/NotFound";
 import { getCurrentUser } from "./utils/auth";
+import ManualTimeEntry from "./components/ManualTimeEntry";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,14 @@ const App = () => {
                 element={
                   isAuthenticated ? 
                     <Dashboard onLogout={() => setIsAuthenticated(false)} /> : 
+                    <Navigate to="/login" replace />
+                } 
+              />
+              <Route 
+                path="/manual-entry" 
+                element={
+                  isAuthenticated ? 
+                    <ManualTimeEntry /> : 
                     <Navigate to="/login" replace />
                 } 
               />
