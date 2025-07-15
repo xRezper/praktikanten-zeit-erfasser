@@ -170,17 +170,6 @@ const ManualTimeEntry: React.FC = () => {
                 />
               </div>
 
-              {systemStartTime && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-blue-700 text-sm">
-                    <AlertCircle className="h-4 w-4" />
-                    PC-Start heute: {systemStartTime}
-                  </div>
-                  <p className="text-xs text-blue-600 mt-1">
-                    Zeiten vor dem PC-Start können nicht eingetragen werden.
-                  </p>
-                </div>
-              )}
 
               <div className="flex gap-3">
                 <Button 
