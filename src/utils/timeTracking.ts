@@ -106,23 +106,6 @@ export const isValidTimeEntry = (date: string, startTime: string, endTime: strin
     };
   }
 
-  // Prüfe ob das Datum heute ist und die Zeit vor PC-Start liegt
-  const today = new Date().toISOString().split('T')[0];
-  if (date === today) {
-    const systemStartStr = localStorage.getItem(SYSTEM_START_KEY);
-    if (systemStartStr) {
-      const systemStart = new Date(systemStartStr);
-      const systemStartMinutes = systemStart.getHours() * 60 + systemStart.getMinutes();
-      
-      if (start < systemStartMinutes) {
-        return {
-          isValid: false,
-          message: `Die Startzeit kann nicht vor dem PC-Start (${systemStart.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}) liegen`
-        };
-      }
-    }
-  }
-
   return {
     isValid: true,
     message: ''
