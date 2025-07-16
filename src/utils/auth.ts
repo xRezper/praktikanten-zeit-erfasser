@@ -1,87 +1,48 @@
 
-interface User {
-  username: string;
-  password: string;
-  createdAt: string;
+import { supabase } from "@/integrations/supabase/client";
+import { User, Session } from '@supabase/supabase-js';
+
+export interface AuthState {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
 }
 
-const USERS_KEY = 'timetrack_users';
-const CURRENT_USER_KEY = 'timetrack_current_user';
-
-export const register = async (username: string, password: string): Promise<boolean> => {
-  try {
-    const users = getUsers();
-    
-    // Prüfen ob Benutzername bereits existiert
-    if (users.find(user => user.username === username)) {
-      return false;
+export const signUp = async (email: string, password: string, username: string) => {
+  const redirectUrl = `${window.location.origin}/`;
+  
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: redirectUrl,
+      data: {
+        username: username
+      }
     }
-
-    const newUser: User = {
-      username,
-      password, // In einer echten App würde man das Passwort hashen
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(newUser);
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    
-    console.log('User registered successfully:', username);
-    return true;
-  } catch (error) {
-    console.error('Registration error:', error);
-    return false;
-  }
+  });
+  
+  return { data, error };
 };
 
-export const login = async (username: string, password: string): Promise<boolean> => {
-  try {
-    const users = getUsers();
-    const user = users.find(u => u.username === username && u.password === password);
-    
-    if (user) {
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify({
-        username: user.username,
-        loginTime: new Date().toISOString()
-      }));
-      console.log('User logged in successfully:', username);
-      return true;
-    }
-    
-    console.log('Login failed for user:', username);
-    return false;
-  } catch (error) {
-    console.error('Login error:', error);
-    return false;
-  }
+export const signIn = async (email: string, password: string) => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+  
+  return { data, error };
 };
 
-export const logout = (): void => {
-  localStorage.removeItem(CURRENT_USER_KEY);
-  console.log('User logged out');
+export const signOut = async () => {
+  const { error } = await supabase.auth.signOut();
+  return { error };
 };
 
-export const getCurrentUser = (): any => {
-  try {
-    const userStr = localStorage.getItem(CURRENT_USER_KEY);
-    return userStr ? JSON.parse(userStr) : null;
-  } catch (error) {
-    console.error('Error getting current user:', error);
-    return null;
-  }
+export const getCurrentUser = () => {
+  return supabase.auth.getUser();
 };
 
-const getUsers = (): User[] => {
-  try {
-    const usersStr = localStorage.getItem(USERS_KEY);
-    return usersStr ? JSON.parse(usersStr) : [];
-  } catch (error) {
-    console.error('Error getting users:', error);
-    return [];
-  }
-};
-
-// Debug-Funktion zum Anzeigen aller Benutzer
-export const getAllUsers = (): User[] => {
-  return getUsers();
+export const getCurrentSession = () => {
+  return supabase.auth.getSession();
 };

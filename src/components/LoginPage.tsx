@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Clock, User, Lock, AlertCircle } from 'lucide-react';
-import { login } from '../utils/auth';
+import { Clock, Mail, Lock, AlertCircle } from 'lucide-react';
+import { signIn } from '../utils/auth';
 import { toast } from 'sonner';
 
 interface LoginPageProps {
@@ -15,7 +15,7 @@ interface LoginPageProps {
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [loading, setLoading] = useState(false);
@@ -27,12 +27,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setError('');
 
     try {
-      const success = await login(formData.username, formData.password);
-      if (success) {
+      const { data, error: signInError } = await signIn(formData.email, formData.password);
+      
+      if (signInError) {
+        if (signInError.message.includes('Invalid login credentials')) {
+          setError('E-Mail oder Passwort falsch');
+        } else if (signInError.message.includes('Email not confirmed')) {
+          setError('Bitte bestätigen Sie Ihre E-Mail-Adresse');
+        } else {
+          setError(signInError.message);
+        }
+      } else if (data.user) {
         toast.success('Erfolgreich angemeldet!');
         onLogin();
-      } else {
-        setError('Benutzername oder Passwort falsch');
       }
     } catch (err) {
       setError('Ein Fehler ist aufgetreten');
@@ -79,19 +86,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="username" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Benutzername
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  E-Mail
                 </Label>
                 <Input
-                  id="username"
-                  name="username"
-                  type="text"
-                  value={formData.username}
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
                   onChange={handleChange}
                   required
                   className="h-11"
-                  placeholder="Ihr Benutzername"
+                  placeholder="ihre@email.de"
                 />
               </div>
 

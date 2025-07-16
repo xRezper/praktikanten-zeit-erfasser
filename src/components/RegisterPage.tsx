@@ -5,13 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Clock, User, Lock, AlertCircle, CheckCircle } from 'lucide-react';
-import { register } from '../utils/auth';
+import { Clock, Mail, User, Lock, AlertCircle, CheckCircle } from 'lucide-react';
+import { signUp } from '../utils/auth';
 import { toast } from 'sonner';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    email: '',
     username: '',
     password: '',
     confirmPassword: ''
@@ -30,19 +31,24 @@ const RegisterPage = () => {
       return;
     }
 
-    if (formData.password.length < 4) {
-      setError('Passwort muss mindestens 4 Zeichen lang sein');
+    if (formData.password.length < 6) {
+      setError('Passwort muss mindestens 6 Zeichen lang sein');
       setLoading(false);
       return;
     }
 
     try {
-      const success = await register(formData.username, formData.password);
-      if (success) {
-        toast.success('Konto erfolgreich erstellt!');
-        navigate('/login');
+      const { data, error: signUpError } = await signUp(formData.email, formData.password, formData.username);
+      
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          setError('E-Mail bereits registriert');
+        } else {
+          setError(signUpError.message);
+        }
       } else {
-        setError('Benutzername bereits vergeben');
+        toast.success('Konto erfolgreich erstellt! Bitte prüfen Sie Ihre E-Mails.');
+        navigate('/login');
       }
     } catch (err) {
       setError('Ein Fehler ist aufgetreten');
@@ -89,6 +95,23 @@ const RegisterPage = () => {
               )}
 
               <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  E-Mail
+                </Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="h-11"
+                  placeholder="ihre@email.de"
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="username" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Benutzername
@@ -118,7 +141,7 @@ const RegisterPage = () => {
                   onChange={handleChange}
                   required
                   className="h-11"
-                  placeholder="Mindestens 4 Zeichen"
+                  placeholder="Mindestens 6 Zeichen"
                 />
               </div>
 

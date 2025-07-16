@@ -15,7 +15,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentUser, logout } from '../utils/auth';
+import { signOut } from '../utils/auth';
 import { 
   getTimeEntries, 
   calculateTotalHours,
@@ -23,19 +23,18 @@ import {
 } from '../utils/timeTracking';
 import { toast } from 'sonner';
 import LiveTimer from './LiveTimer';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface DashboardProps {
   onLogout: () => void;
+  currentUser: SupabaseUser;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
   const navigate = useNavigate();
   const [timeEntries, setTimeEntries] = useState<any[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
-    const user = getCurrentUser();
-    setCurrentUser(user);
     loadTimeEntries();
   }, []);
 
@@ -44,10 +43,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
     setTimeEntries(entries);
   };
 
-  const handleLogout = () => {
-    logout();
-    onLogout();
-    toast.success('Erfolgreich abgemeldet');
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast.error('Fehler beim Abmelden');
+    } else {
+      onLogout();
+      toast.success('Erfolgreich abgemeldet');
+    }
   };
 
   const groupedEntries = timeEntries.reduce((groups: any, entry) => {
@@ -100,7 +103,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-gray-600">
                 <User className="h-4 w-4" />
-                <span className="font-medium">{currentUser?.username}</span>
+                <span className="font-medium">{currentUser?.email || 'Benutzer'}</span>
               </div>
               <Button 
                 onClick={handleLogout}

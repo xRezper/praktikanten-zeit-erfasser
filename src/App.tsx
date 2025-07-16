@@ -8,19 +8,35 @@ import LoginPage from "./components/LoginPage";
 import RegisterPage from "./components/RegisterPage";
 import Dashboard from "./components/Dashboard";
 import NotFound from "./pages/NotFound";
-import { getCurrentUser } from "./utils/auth";
 import ManualTimeEntry from "./components/ManualTimeEntry";
+import { supabase } from "@/integrations/supabase/client";
+import type { User, Session } from '@supabase/supabase-js';
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const user = getCurrentUser();
-    setIsAuthenticated(!!user);
-    setLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   if (loading) {
@@ -42,15 +58,15 @@ const App = () => {
               <Route 
                 path="/login" 
                 element={
-                  isAuthenticated ? 
+                  user ? 
                     <Navigate to="/dashboard" replace /> : 
-                    <LoginPage onLogin={() => setIsAuthenticated(true)} />
+                    <LoginPage onLogin={() => {}} />
                 } 
               />
               <Route 
                 path="/register" 
                 element={
-                  isAuthenticated ? 
+                  user ? 
                     <Navigate to="/dashboard" replace /> : 
                     <RegisterPage />
                 } 
@@ -58,15 +74,15 @@ const App = () => {
               <Route 
                 path="/dashboard" 
                 element={
-                  isAuthenticated ? 
-                    <Dashboard onLogout={() => setIsAuthenticated(false)} /> : 
+                  user ? 
+                    <Dashboard onLogout={() => {}} currentUser={user} /> : 
                     <Navigate to="/login" replace />
                 } 
               />
               <Route 
                 path="/manual-entry" 
                 element={
-                  isAuthenticated ? 
+                  user ? 
                     <ManualTimeEntry /> : 
                     <Navigate to="/login" replace />
                 } 
@@ -74,7 +90,7 @@ const App = () => {
               <Route 
                 path="/" 
                 element={
-                  <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
+                  <Navigate to={user ? "/dashboard" : "/login"} replace />
                 } 
               />
               <Route path="*" element={<NotFound />} />
