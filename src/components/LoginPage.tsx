@@ -9,17 +9,18 @@ import { Clock, User, Lock, AlertCircle } from 'lucide-react';
 import { signIn } from '../utils/auth';
 import { toast } from 'sonner';
 
-interface Profile {
+interface ProfileData {
   id: string;
   username: string;
   first_name: string | null;
   last_name: string | null;
   role: 'user' | 'admin';
   created_at: string;
+  password_hash?: string;
 }
 
 interface LoginPageProps {
-  onLogin: (user: Profile) => void;
+  onLogin: (user: ProfileData) => void;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {

@@ -26,18 +26,19 @@ import LiveTimer from './LiveTimer';
 import { AdminPanel } from './AdminPanel';
 import { Shield } from 'lucide-react';
 
-interface Profile {
+interface ProfileData {
   id: string;
   username: string;
   first_name: string | null;
   last_name: string | null;
   role: 'user' | 'admin';
   created_at: string;
+  password_hash?: string;
 }
 
 interface DashboardProps {
   onLogout: () => void;
-  currentUser: Profile;
+  currentUser: ProfileData;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {

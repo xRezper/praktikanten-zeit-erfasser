@@ -11,19 +11,20 @@ import NotFound from "./pages/NotFound";
 import ManualTimeEntry from "./components/ManualTimeEntry";
 import { getCurrentUser } from "./utils/auth";
 
-interface Profile {
+interface ProfileData {
   id: string;
   username: string;
   first_name: string | null;
   last_name: string | null;
   role: 'user' | 'admin';
   created_at: string;
+  password_hash?: string;
 }
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [currentUser, setCurrentUser] = useState<Profile | null>(null);
+  const [currentUser, setCurrentUser] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,7 +34,7 @@ const App = () => {
     setLoading(false);
   }, []);
 
-  const handleLogin = (user: Profile) => {
+  const handleLogin = (user: ProfileData) => {
     setCurrentUser(user);
   };
 
