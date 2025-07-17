@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
     username: '',
     password: '',
     confirmPassword: ''
@@ -38,7 +37,7 @@ const RegisterPage = () => {
     }
 
     try {
-      const { data, error: signUpError } = await signUp(formData.email, formData.password, formData.username);
+      const { data, error: signUpError } = await signUp(formData.username, formData.password);
       
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
@@ -47,7 +46,7 @@ const RegisterPage = () => {
           setError(signUpError.message);
         }
       } else {
-        toast.success('Konto erfolgreich erstellt! Bitte prüfen Sie Ihre E-Mails.');
+        toast.success('Konto erfolgreich erstellt!');
         navigate('/login');
       }
     } catch (err) {
@@ -93,23 +92,6 @@ const RegisterPage = () => {
                   {error}
                 </div>
               )}
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  E-Mail
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="h-11"
-                  placeholder="ihre@email.de"
-                />
-              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="username" className="flex items-center gap-2">

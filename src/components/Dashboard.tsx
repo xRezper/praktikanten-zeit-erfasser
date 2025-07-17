@@ -23,11 +23,21 @@ import {
 } from '../utils/timeTracking';
 import { toast } from 'sonner';
 import LiveTimer from './LiveTimer';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { AdminPanel } from './AdminPanel';
+import { Shield } from 'lucide-react';
+
+interface Profile {
+  id: string;
+  username: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: 'user' | 'admin';
+  created_at: string;
+}
 
 interface DashboardProps {
   onLogout: () => void;
-  currentUser: SupabaseUser;
+  currentUser: Profile;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
@@ -103,7 +113,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-gray-600">
                 <User className="h-4 w-4" />
-                <span className="font-medium">{currentUser?.email || 'Benutzer'}</span>
+                <span className="font-medium">{currentUser?.username || 'Benutzer'}</span>
+                {currentUser?.role === 'admin' && (
+                  <Shield className="h-4 w-4 text-blue-600" />
+                )}
               </div>
               <Button 
                 onClick={handleLogout}
@@ -187,6 +200,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Admin Panel */}
+            {currentUser?.role === 'admin' && (
+              <AdminPanel />
+            )}
           </div>
 
           {/* Zeiteinträge Liste - nur aktuelle Woche */}

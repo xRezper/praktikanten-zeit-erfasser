@@ -9,35 +9,37 @@ import RegisterPage from "./components/RegisterPage";
 import Dashboard from "./components/Dashboard";
 import NotFound from "./pages/NotFound";
 import ManualTimeEntry from "./components/ManualTimeEntry";
-import { supabase } from "@/integrations/supabase/client";
-import type { User, Session } from '@supabase/supabase-js';
+import { getCurrentUser } from "./utils/auth";
+
+interface Profile {
+  id: string;
+  username: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: 'user' | 'admin';
+  created_at: string;
+}
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [currentUser, setCurrentUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    // Check for existing user session
+    const user = getCurrentUser();
+    setCurrentUser(user);
+    setLoading(false);
   }, []);
+
+  const handleLogin = (user: Profile) => {
+    setCurrentUser(user);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+  };
 
   if (loading) {
     return (
@@ -58,15 +60,15 @@ const App = () => {
               <Route 
                 path="/login" 
                 element={
-                  user ? 
+                  currentUser ? 
                     <Navigate to="/dashboard" replace /> : 
-                    <LoginPage onLogin={() => {}} />
+                    <LoginPage onLogin={handleLogin} />
                 } 
               />
               <Route 
                 path="/register" 
                 element={
-                  user ? 
+                  currentUser ? 
                     <Navigate to="/dashboard" replace /> : 
                     <RegisterPage />
                 } 
@@ -74,15 +76,15 @@ const App = () => {
               <Route 
                 path="/dashboard" 
                 element={
-                  user ? 
-                    <Dashboard onLogout={() => {}} currentUser={user} /> : 
+                  currentUser ? 
+                    <Dashboard onLogout={handleLogout} currentUser={currentUser} /> : 
                     <Navigate to="/login" replace />
                 } 
               />
               <Route 
                 path="/manual-entry" 
                 element={
-                  user ? 
+                  currentUser ? 
                     <ManualTimeEntry /> : 
                     <Navigate to="/login" replace />
                 } 
@@ -90,7 +92,7 @@ const App = () => {
               <Route 
                 path="/" 
                 element={
-                  <Navigate to={user ? "/dashboard" : "/login"} replace />
+                  <Navigate to={currentUser ? "/dashboard" : "/login"} replace />
                 } 
               />
               <Route path="*" element={<NotFound />} />

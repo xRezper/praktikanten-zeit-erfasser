@@ -1,9 +1,18 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AuthState {
   user: any | null;
   loading: boolean;
+}
+
+interface Profile {
+  id: string;
+  username: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: 'user' | 'admin';
+  created_at: string;
+  password_hash: string;
 }
 
 export const signUp = async (username: string, password: string) => {
@@ -13,7 +22,7 @@ export const signUp = async (username: string, password: string) => {
       .from('profiles')
       .select('username')
       .eq('username', username)
-      .single();
+      .maybeSingle();
 
     if (existingUser) {
       return { data: null, error: { message: 'Benutzername bereits vergeben' } };
@@ -46,10 +55,10 @@ export const signIn = async (username: string, password: string) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, username, first_name, last_name, role, created_at, password_hash')
       .eq('username', username)
       .eq('password_hash', password)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       return { data: null, error: { message: 'Benutzername oder Passwort falsch' } };
@@ -58,7 +67,7 @@ export const signIn = async (username: string, password: string) => {
     // Store user session in localStorage
     localStorage.setItem('current_user', JSON.stringify(data));
     
-    return { data: { user: data }, error: null };
+    return { data: { user: data as Profile }, error: null };
   } catch (error) {
     return { data: null, error: { message: 'Ein Fehler ist aufgetreten' } };
   }
@@ -69,7 +78,7 @@ export const signOut = async () => {
   return { error: null };
 };
 
-export const getCurrentUser = () => {
+export const getCurrentUser = (): Profile | null => {
   try {
     const userStr = localStorage.getItem('current_user');
     return userStr ? JSON.parse(userStr) : null;
