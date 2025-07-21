@@ -9,37 +9,80 @@ import RegisterPage from "./components/RegisterPage";
 import Dashboard from "./components/Dashboard";
 import NotFound from "./pages/NotFound";
 import ManualTimeEntry from "./components/ManualTimeEntry";
-import { getCurrentUser } from "./utils/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { User, Session } from '@supabase/supabase-js';
 
 interface ProfileData {
   id: string;
-  username: string;
+  username?: string;
   first_name: string | null;
   last_name: string | null;
   role: 'user' | 'admin';
   created_at: string;
-  password_hash?: string;
 }
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [currentUser, setCurrentUser] = useState<ProfileData | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing user session
-    const user = getCurrentUser();
-    setCurrentUser(user);
-    setLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Fetch user profile
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          
+          setProfile(profileData);
+        } else {
+          setProfile(null);
+        }
+        
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        // Fetch user profile
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle()
+          .then(({ data: profileData }) => {
+            setProfile(profileData);
+            setLoading(false);
+          });
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogin = (user: ProfileData) => {
-    setCurrentUser(user);
+  const handleLogin = () => {
+    // Auth state will be handled by the listener
   };
 
   const handleLogout = () => {
-    setCurrentUser(null);
+    supabase.auth.signOut();
   };
 
   if (loading) {
@@ -61,7 +104,7 @@ const App = () => {
               <Route 
                 path="/login" 
                 element={
-                  currentUser ? 
+                  user ? 
                     <Navigate to="/dashboard" replace /> : 
                     <LoginPage onLogin={handleLogin} />
                 } 
@@ -69,7 +112,7 @@ const App = () => {
               <Route 
                 path="/register" 
                 element={
-                  currentUser ? 
+                  user ? 
                     <Navigate to="/dashboard" replace /> : 
                     <RegisterPage />
                 } 
@@ -77,15 +120,15 @@ const App = () => {
               <Route 
                 path="/dashboard" 
                 element={
-                  currentUser ? 
-                    <Dashboard onLogout={handleLogout} currentUser={currentUser} /> : 
+                  user && profile ? 
+                    <Dashboard onLogout={handleLogout} currentUser={profile} /> : 
                     <Navigate to="/login" replace />
                 } 
               />
               <Route 
                 path="/manual-entry" 
                 element={
-                  currentUser ? 
+                  user ? 
                     <ManualTimeEntry /> : 
                     <Navigate to="/login" replace />
                 } 
@@ -93,7 +136,7 @@ const App = () => {
               <Route 
                 path="/" 
                 element={
-                  <Navigate to={currentUser ? "/dashboard" : "/login"} replace />
+                  <Navigate to={user ? "/dashboard" : "/login"} replace />
                 } 
               />
               <Route path="*" element={<NotFound />} />

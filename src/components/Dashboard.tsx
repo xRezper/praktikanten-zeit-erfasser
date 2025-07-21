@@ -28,12 +28,11 @@ import { Shield } from 'lucide-react';
 
 interface ProfileData {
   id: string;
-  username: string;
+  username?: string;
   first_name: string | null;
   last_name: string | null;
   role: 'user' | 'admin';
   created_at: string;
-  password_hash?: string;
 }
 
 interface DashboardProps {

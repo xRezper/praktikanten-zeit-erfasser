@@ -1,90 +1,64 @@
 import { supabase } from "@/integrations/supabase/client";
+import { User, Session } from '@supabase/supabase-js';
 
 export interface AuthState {
-  user: any | null;
+  user: User | null;
+  session: Session | null;
   loading: boolean;
 }
 
 interface ProfileData {
   id: string;
-  username: string;
+  username?: string;
   first_name: string | null;
   last_name: string | null;
   role: 'user' | 'admin';
   created_at: string;
-  password_hash?: string;
 }
 
-export const signUp = async (username: string, password: string) => {
+export const signUp = async (email: string, password: string, username?: string) => {
   try {
-    // Check if username already exists
-    const { data: existingUser } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('username', username)
-      .maybeSingle();
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          username: username || email.split('@')[0]
+        }
+      }
+    });
 
-    if (existingUser) {
-      return { data: null, error: { message: 'Benutzername bereits vergeben' } };
-    }
-
-    // Create user record in profiles table
-    const userId = crypto.randomUUID();
-    const insertData = {
-      id: userId,
-      username,
-      password_hash: password, // In production, this should be properly hashed
-      created_at: new Date().toISOString()
-    };
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert([insertData])
-      .select()
-      .single();
-
-    if (error) {
-      return { data: null, error };
-    }
-
-    return { data: { user: data }, error: null };
+    return { data, error };
   } catch (error) {
     return { data: null, error: { message: 'Ein Fehler ist aufgetreten' } };
   }
 };
 
-export const signIn = async (username: string, password: string) => {
+export const signIn = async (email: string, password: string) => {
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, username, first_name, last_name, role, created_at, password_hash')
-      .eq('username', username)
-      .eq('password_hash', password)
-      .maybeSingle();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
 
-    if (error || !data) {
-      return { data: null, error: { message: 'Benutzername oder Passwort falsch' } };
-    }
-
-    // Store user session in localStorage
-    localStorage.setItem('current_user', JSON.stringify(data));
-    
-    return { data: { user: data }, error: null };
+    return { data, error };
   } catch (error) {
     return { data: null, error: { message: 'Ein Fehler ist aufgetreten' } };
   }
 };
 
 export const signOut = async () => {
-  localStorage.removeItem('current_user');
-  return { error: null };
+  const { error } = await supabase.auth.signOut();
+  return { error };
 };
 
-export const getCurrentUser = (): ProfileData | null => {
-  try {
-    const userStr = localStorage.getItem('current_user');
-    return userStr ? JSON.parse(userStr) : null;
-  } catch (error) {
-    return null;
-  }
+export const getCurrentUser = (): User | null => {
+  return supabase.auth.getUser().then(({ data: { user } }) => user).catch(() => null) as any;
+};
+
+export const getCurrentSession = (): Session | null => {
+  return supabase.auth.getSession().then(({ data: { session } }) => session).catch(() => null) as any;
 };

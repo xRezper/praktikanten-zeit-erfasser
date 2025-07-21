@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    email: '',
     username: '',
     password: '',
     confirmPassword: ''
@@ -37,7 +38,7 @@ const RegisterPage = () => {
     }
 
     try {
-      const { data, error: signUpError } = await signUp(formData.username, formData.password);
+      const { data, error: signUpError } = await signUp(formData.email, formData.password, formData.username);
       
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
@@ -46,7 +47,7 @@ const RegisterPage = () => {
           setError(signUpError.message);
         }
       } else {
-        toast.success('Konto erfolgreich erstellt!');
+        toast.success('Konto erfolgreich erstellt! Bitte bestätigen Sie Ihre E-Mail-Adresse.');
         navigate('/login');
       }
     } catch (err) {
@@ -94,9 +95,26 @@ const RegisterPage = () => {
               )}
 
               <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  E-Mail
+                </Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="h-11"
+                  placeholder="Ihre E-Mail-Adresse"
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="username" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Benutzername
+                  Benutzername (optional)
                 </Label>
                 <Input
                   id="username"
@@ -104,7 +122,6 @@ const RegisterPage = () => {
                   type="text"
                   value={formData.username}
                   onChange={handleChange}
-                  required
                   className="h-11"
                   placeholder="Wählen Sie einen Benutzernamen"
                 />
