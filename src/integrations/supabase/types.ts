@@ -20,7 +20,6 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
-          password_hash: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
           username: string | null
@@ -30,7 +29,6 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
-          password_hash?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           username?: string | null
@@ -40,7 +38,6 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
-          password_hash?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           username?: string | null
