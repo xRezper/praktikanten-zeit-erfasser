@@ -30,53 +30,65 @@ const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Setting up auth listener');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('Fetching profile for user:', session.user.id);
           // Fetch user profile
           try {
-            const { data: profileData } = await supabase
+            const { data: profileData, error } = await supabase
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
               .maybeSingle();
             
+            console.log('Profile data:', profileData, 'Error:', error);
             setProfile(profileData);
           } catch (error) {
             console.error('Error fetching profile:', error);
             setProfile(null);
           }
         } else {
+          console.log('No session, clearing profile');
           setProfile(null);
         }
         
+        console.log('Setting loading to false');
         setLoading(false);
       }
     );
 
     // Check for existing session
     const getInitialSession = async () => {
+      console.log('Getting initial session');
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('Initial session:', session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          const { data: profileData } = await supabase
+          console.log('Fetching initial profile for user:', session.user.id);
+          const { data: profileData, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .maybeSingle();
           
+          console.log('Initial profile data:', profileData, 'Error:', error);
           setProfile(profileData);
         }
       } catch (error) {
         console.error('Error getting session:', error);
       } finally {
+        console.log('Initial session check complete, setting loading to false');
         setLoading(false);
       }
     };
