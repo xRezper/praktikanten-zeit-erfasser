@@ -141,8 +141,13 @@ const App = () => {
               <Route 
                 path="/dashboard" 
                 element={
-                  user && profile ? 
-                    <Dashboard onLogout={handleLogout} currentUser={profile} /> : 
+                  user ? 
+                    (profile ? 
+                      <Dashboard onLogout={handleLogout} currentUser={profile} /> : 
+                      <div className="min-h-screen flex items-center justify-center">
+                        <div className="text-xl">Lade Profil...</div>
+                      </div>
+                    ) : 
                     <Navigate to="/login" replace />
                 } 
               />
@@ -156,9 +161,7 @@ const App = () => {
               />
               <Route 
                 path="/" 
-                element={
-                  <Navigate to={user ? "/dashboard" : "/login"} replace />
-                } 
+                element={<Navigate to="/login" replace />}
               />
               <Route path="*" element={<NotFound />} />
             </Routes>
