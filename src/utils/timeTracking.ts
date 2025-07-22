@@ -1,29 +1,28 @@
 
+import { supabase } from "@/integrations/supabase/client";
+
 interface TimeEntry {
   id: string;
-  username: string;
+  user_id: string;
   date: string;
-  startTime: string;
-  endTime: string;
+  start_time: string;
+  end_time: string;
   description: string;
-  createdAt: string;
+  created_at: string;
 }
-
-const TIME_ENTRIES_KEY = 'timetrack_entries';
-const SYSTEM_START_KEY = 'timetrack_system_start';
 
 // Speichere System-Startzeit beim ersten Laden
 export const initializeSystemStartTime = (): void => {
-  if (!localStorage.getItem(SYSTEM_START_KEY)) {
+  if (!localStorage.getItem('timetrack_system_start')) {
     const now = new Date();
-    localStorage.setItem(SYSTEM_START_KEY, now.toISOString());
+    localStorage.setItem('timetrack_system_start', now.toISOString());
     console.log('System start time initialized:', now.toISOString());
   }
 };
 
 export const getSystemStartTime = (): string => {
   initializeSystemStartTime();
-  const startTimeStr = localStorage.getItem(SYSTEM_START_KEY);
+  const startTimeStr = localStorage.getItem('timetrack_system_start');
   if (startTimeStr) {
     const startTime = new Date(startTimeStr);
     return startTime.toLocaleTimeString('de-DE', { 
@@ -34,19 +33,39 @@ export const getSystemStartTime = (): string => {
   return '';
 };
 
-export const addTimeEntry = (entry: Omit<TimeEntry, 'id' | 'createdAt'>): boolean => {
+export const addTimeEntry = async (entry: {
+  date: string;
+  startTime: string;
+  endTime: string;
+  description: string;
+  username?: string;
+}): Promise<boolean> => {
   try {
-    const entries = getTimeEntries();
-    const newEntry: TimeEntry = {
-      ...entry,
-      id: generateId(),
-      createdAt: new Date().toISOString()
-    };
+    const { data: { user } } = await supabase.auth.getUser();
     
-    entries.push(newEntry);
-    localStorage.setItem(TIME_ENTRIES_KEY, JSON.stringify(entries));
-    
-    console.log('Time entry added:', newEntry);
+    if (!user) {
+      console.error('No authenticated user found');
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from('time_entries')
+      .insert([
+        {
+          user_id: user.id,
+          date: entry.date,
+          start_time: entry.startTime,
+          end_time: entry.endTime,
+          description: entry.description
+        }
+      ]);
+
+    if (error) {
+      console.error('Error adding time entry:', error);
+      return false;
+    }
+
+    console.log('Time entry added successfully:', data);
     return true;
   } catch (error) {
     console.error('Error adding time entry:', error);
@@ -54,16 +73,37 @@ export const addTimeEntry = (entry: Omit<TimeEntry, 'id' | 'createdAt'>): boolea
   }
 };
 
-export const getTimeEntries = (): TimeEntry[] => {
+export const getTimeEntries = async (): Promise<TimeEntry[]> => {
   try {
-    const entriesStr = localStorage.getItem(TIME_ENTRIES_KEY);
-    const allEntries = entriesStr ? JSON.parse(entriesStr) : [];
+    const { data: { user } } = await supabase.auth.getUser();
     
-    // Filtere nur Einträge des aktuellen Benutzers
-    const currentUser = getCurrentUserFromStorage();
-    if (!currentUser) return [];
-    
-    return allEntries.filter((entry: TimeEntry) => entry.username === currentUser.username);
+    if (!user) {
+      console.error('No authenticated user found');
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('time_entries')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .order('start_time', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching time entries:', error);
+      return [];
+    }
+
+    // Transform to match expected interface
+    return (data || []).map(entry => ({
+      id: entry.id,
+      user_id: entry.user_id,
+      date: entry.date,
+      start_time: entry.start_time,
+      end_time: entry.end_time,
+      description: entry.description,
+      created_at: entry.created_at
+    }));
   } catch (error) {
     console.error('Error getting time entries:', error);
     return [];
@@ -72,7 +112,7 @@ export const getTimeEntries = (): TimeEntry[] => {
 
 export const calculateTotalHours = (entries: TimeEntry[]): number => {
   return entries.reduce((total, entry) => {
-    const hours = calculateHours(entry.startTime, entry.endTime);
+    const hours = calculateHours(entry.start_time, entry.end_time);
     return total + hours;
   }, 0);
 };
@@ -118,33 +158,14 @@ const timeStringToMinutes = (timeStr: string): number => {
   return hours * 60 + minutes;
 };
 
-const generateId = (): string => {
-  return Date.now().toString() + Math.random().toString(36).substr(2, 9);
-};
-
-const getCurrentUserFromStorage = (): any => {
-  try {
-    const userStr = localStorage.getItem('timetrack_current_user');
-    return userStr ? JSON.parse(userStr) : null;
-  } catch (error) {
-    console.error('Error getting current user from storage:', error);
-    return null;
-  }
-};
-
-// Debug-Funktionen
+// Debug-Funktionen für localStorage (deprecated, aber für Kompatibilität beibehalten)
 export const getAllTimeEntries = (): TimeEntry[] => {
-  try {
-    const entriesStr = localStorage.getItem(TIME_ENTRIES_KEY);
-    return entriesStr ? JSON.parse(entriesStr) : [];
-  } catch (error) {
-    console.error('Error getting all time entries:', error);
-    return [];
-  }
+  console.warn('getAllTimeEntries is deprecated. Use getTimeEntries() instead.');
+  return [];
 };
 
 export const clearAllData = (): void => {
-  localStorage.removeItem(TIME_ENTRIES_KEY);
-  localStorage.removeItem(SYSTEM_START_KEY);
-  console.log('All time tracking data cleared');
+  localStorage.removeItem('timetrack_entries');
+  localStorage.removeItem('timetrack_system_start');
+  console.log('All local time tracking data cleared');
 };

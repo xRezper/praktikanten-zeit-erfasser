@@ -93,7 +93,7 @@ const LiveTimer: React.FC<LiveTimerProps> = ({ onTimeAdded }) => {
       username: currentUser?.username
     };
 
-    const success = addTimeEntry(entry);
+    const success = await addTimeEntry(entry);
     
     if (success) {
       toast.success('Arbeitszeit erfolgreich gespeichert!');

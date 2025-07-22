@@ -63,7 +63,7 @@ const ManualTimeEntry: React.FC = () => {
         username: currentUser?.username
       };
 
-      const success = addTimeEntry(entry);
+      const success = await addTimeEntry(entry);
       
       if (success) {
         toast.success('Zeiteintrag erfolgreich hinzugefügt!');

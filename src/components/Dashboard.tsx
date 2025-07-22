@@ -48,8 +48,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
     loadTimeEntries();
   }, []);
 
-  const loadTimeEntries = () => {
-    const entries = getTimeEntries();
+  const loadTimeEntries = async () => {
+    const entries = await getTimeEntries();
     setTimeEntries(entries);
   };
 
@@ -257,13 +257,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                               <div key={index} className="bg-white rounded-lg p-3 border">
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                                      <Clock className="h-3 w-3" />
-                                      {entry.startTime} - {entry.endTime}
-                                    </div>
-                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                                      {formatTime(entry.startTime, entry.endTime)}
-                                    </span>
+                                     <div className="flex items-center gap-1 text-sm text-gray-600">
+                                       <Clock className="h-3 w-3" />
+                                       {entry.start_time} - {entry.end_time}
+                                     </div>
+                                     <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                       {formatTime(entry.start_time, entry.end_time)}
+                                     </span>
                                   </div>
                                 </div>
                                 <p className="text-gray-700 text-sm">{entry.description}</p>
