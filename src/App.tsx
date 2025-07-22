@@ -124,11 +124,7 @@ const App = () => {
             <Routes>
               <Route 
                 path="/login" 
-                element={
-                  user ? 
-                    <Navigate to="/dashboard" replace /> : 
-                    <LoginPage onLogin={handleLogin} />
-                } 
+                element={<LoginPage onLogin={handleLogin} />} 
               />
               <Route 
                 path="/register" 
