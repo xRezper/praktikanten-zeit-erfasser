@@ -99,7 +99,8 @@ const App = () => {
   }, []);
 
   const handleLogin = () => {
-    // Auth state will be handled by the listener
+    // Navigate to dashboard after successful login
+    window.location.href = '/dashboard';
   };
 
   const handleLogout = () => {
