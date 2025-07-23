@@ -12,7 +12,8 @@ import {
   History,
   Edit,
   Target,
-  TrendingUp
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from '../utils/auth';
@@ -25,6 +26,7 @@ import { toast } from 'sonner';
 import LiveTimer from './LiveTimer';
 import { AdminPanel } from './AdminPanel';
 import { Shield } from 'lucide-react';
+import MonthlyOverview from './MonthlyOverview';
 
 interface ProfileData {
   id: string;
@@ -43,6 +45,7 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
   const navigate = useNavigate();
   const [timeEntries, setTimeEntries] = useState<any[]>([]);
+  const [showMonthlyOverview, setShowMonthlyOverview] = useState(false);
 
   useEffect(() => {
     loadTimeEntries();
@@ -141,7 +144,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
 
             {/* Manual Entry Button */}
             <Card className="shadow-sm">
-              <CardContent className="pt-6">
+              <CardContent className="pt-6 space-y-3">
                 <Button 
                   onClick={() => navigate('/manual-entry')}
                   variant="outline"
@@ -149,6 +152,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
                 >
                   <Edit className="h-4 w-4" />
                   Zeit nachtragen
+                </Button>
+                <Button 
+                  onClick={() => setShowMonthlyOverview(true)}
+                  variant="outline"
+                  className="w-full flex items-center gap-2"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Monatsübersicht
                 </Button>
               </CardContent>
             </Card>
@@ -280,6 +291,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, currentUser }) => {
           </div>
         </div>
       </div>
+
+      {showMonthlyOverview && (
+        <MonthlyOverview 
+          onClose={() => setShowMonthlyOverview(false)}
+        />
+      )}
     </div>
   );
 };
